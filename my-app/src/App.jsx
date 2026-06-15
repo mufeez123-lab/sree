@@ -22,6 +22,17 @@ import UserSettings from "./ui/pages/userprofile/UserSettings";
 import UserLayout from "./ui/pages/userprofile/UserLayout";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import AdminLogin from "./admin/AdminLogin";
+import AdminRoute from "./routes/AdminRoute";
+import AdminLayout from "./admin/AdminLayout";
+import AdminDashboard from "./admin/AdminDashboard";
+import AdminBookings from "./admin/AdminBookings";
+import AdminRooms from "./admin/AdminRooms";
+import AdminEvents from "./admin/AdminEvents";
+import AdminUsers from "./admin/AdminUsers";
+import AdminBilling from "./admin/AdminBilling";
+import AdminSettings from "./admin/AdminSettings";
+import AdminContent from "./admin/AdminContent";
 
 const App = () => {
   return (
@@ -58,6 +69,29 @@ const App = () => {
           <Route path="notifications" element={<UserNotifications />} />
           <Route path="settings" element={<UserSettings />} />
         </Route>
+
+
+
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+      {/* ADMIN PANEL (PROTECTED) */}
+      <Route
+        path="/admin/*"
+        element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="bookings" element={<AdminBookings />} />
+        <Route path="rooms" element={<AdminRooms />} />
+        <Route path="events" element={<AdminEvents />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="billing" element={<AdminBilling />} />
+        <Route path="settings" element={<AdminSettings />} />
+        <Route path="content" element={<AdminContent />} />
+      </Route>
 
       </Routes>
 
