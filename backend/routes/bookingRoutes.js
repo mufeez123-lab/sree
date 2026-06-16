@@ -9,12 +9,16 @@ const {
   getUserBookings,
   getAllBookings,
   updateBookingStatus,
-  deleteBooking
+  deleteBooking,
+  createRazorpayOrder,
+  verifyRazorpayPayment
 } = require("../controllers/bookingController");
 
 // User specific routes
 router.post("/", verifyToken, createBooking);
 router.get("/my-bookings", verifyToken, getUserBookings);
+router.post("/razorpay-order", verifyToken, createRazorpayOrder);
+router.post("/verify-payment", verifyToken, verifyRazorpayPayment);
 
 // Admin only routes
 router.get("/", verifyToken, adminMiddleware, getAllBookings);

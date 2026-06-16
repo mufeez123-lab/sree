@@ -20,6 +20,7 @@ const RoomDetails = () => {
   const [checkOut, setCheckOut] = useState("");
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("online");
 
   useEffect(() => {
     const fetchRoomDetails = async () => {
@@ -80,6 +81,15 @@ const RoomDetails = () => {
       total: nights * parseFloat(room.price),
     };
   };
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   const handleBooking = async () => {
     const token = localStorage.getItem("token");
@@ -102,36 +112,123 @@ const RoomDetails = () => {
     }
 
     setBookingLoading(true);
-    try {
-      const response = await fetch("http://localhost:5000/api/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          room_id: room.id,
-          check_in: checkIn,
-          check_out: checkOut,
-          adults,
-          children
-        })
-      });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to submit booking.");
+    if (paymentMethod === "online") {
+      try {
+        const isScriptLoaded = await loadRazorpayScript();
+        if (!isScriptLoaded) {
+          toast.error("Failed to load Razorpay SDK. Please check your internet connection.");
+          setBookingLoading(false);
+          return;
+        }
+
+        // 1. Create order on backend
+        const orderRes = await fetch("http://localhost:5000/api/bookings/razorpay-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            room_id: room.id,
+            check_in: checkIn,
+            check_out: checkOut
+          })
+        });
+
+        const orderData = await orderRes.json();
+        if (!orderRes.ok) {
+          throw new Error(orderData.message || "Failed to initiate online order.");
+        }
+
+        // 2. Open Razorpay checkout modal
+        const options = {
+          key: orderData.key_id,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: "Sree Raaga Resort",
+          description: `Booking for ${room.name}`,
+          image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=120&h=120",
+          order_id: orderData.order_id,
+          handler: async function (response) {
+            try {
+              setBookingLoading(true);
+              const verifyRes = await fetch("http://localhost:5000/api/bookings/verify-payment", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                  room_id: room.id,
+                  check_in: checkIn,
+                  check_out: checkOut,
+                  adults,
+                  children
+                })
+              });
+
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) {
+                throw new Error(verifyData.message || "Payment verification failed.");
+              }
+
+              toast.success("Online payment verified & booking confirmed successfully!");
+              navigate("/dashboard/bookings");
+            } catch (err) {
+              toast.error(err.message || "Payment verification failed.");
+            } finally {
+              setBookingLoading(false);
+            }
+          },
+          theme: {
+            color: "#C8A64D"
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } catch (err) {
+        toast.error(err.message || "Failed to start online payment.");
+      } finally {
+        setBookingLoading(false);
       }
+    } else {
+      // CASH payment method
+      try {
+        const response = await fetch("http://localhost:5000/api/bookings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            room_id: room.id,
+            check_in: checkIn,
+            check_out: checkOut,
+            adults,
+            children,
+            payment_method: "cash"
+          })
+        });
 
-      toast.success("Booking Request Submitted Successfully!");
-      navigate("/dashboard/bookings");
-    } catch (err) {
-      toast.error(err.message || "Booking failed.");
-    } finally {
-      setBookingLoading(false);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to submit booking.");
+        }
+
+        toast.success("Booking request submitted successfully! Please pay cash at resort check-in.");
+        navigate("/dashboard/bookings");
+      } catch (err) {
+        toast.error(err.message || "Booking failed.");
+      } finally {
+        setBookingLoading(false);
+      }
     }
   };
-
   if (loading) {
     return (
       <>
@@ -361,6 +458,20 @@ const RoomDetails = () => {
                     }
                     className="w-full bg-transparent border-b border-gray-600 py-2 outline-none"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-yellow-500 text-xs mb-2 uppercase">
+                    Payment Method
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full bg-transparent text-white border-b border-gray-600 py-2 outline-none cursor-pointer"
+                  >
+                    <option value="online" className="bg-zinc-950 text-white">Online Payment (Razorpay)</option>
+                    <option value="cash" className="bg-zinc-950 text-white">Pay at Resort (Cash)</option>
+                  </select>
                 </div>
 
                 <div className="border-t border-yellow-500/20 pt-6 text-center">

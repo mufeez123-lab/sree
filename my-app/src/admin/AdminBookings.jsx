@@ -216,6 +216,30 @@ const AdminBookings = () => {
     }
   };
 
+  const handleUpdatePaymentMethod = async (id, paymentMethod) => {
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookings/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ payment_method: paymentMethod }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update payment method.");
+      }
+
+      toast.success(`Payment method changed to ${paymentMethod.toUpperCase()}!`);
+      fetchBookings();
+    } catch (err) {
+      toast.error(err.message || "Failed to update payment method.");
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) return;
 
@@ -366,15 +390,18 @@ const AdminBookings = () => {
 
                     {/* PAYMENT METHOD */}
                     <td className="p-4">
-                      <span
-                        className={`text-xs px-2.5 py-1 rounded border font-semibold inline-flex items-center gap-1 uppercase ${
+                      <select
+                        value={b.payment_method || "cash"}
+                        onChange={(e) => handleUpdatePaymentMethod(b.id, e.target.value)}
+                        className={`text-xs px-2 py-1 bg-[#071524] rounded border font-semibold outline-none focus:border-[#C8A64D] uppercase cursor-pointer ${
                           b.payment_method === "online"
-                            ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
-                            : "bg-[#C8A64D]/10 text-[#C8A64D] border-[#C8A64D]/20"
+                            ? "text-indigo-400 border-indigo-500/20"
+                            : "text-[#C8A64D] border-[#C8A64D]/20"
                         }`}
                       >
-                        {b.payment_method || "cash"}
-                      </span>
+                        <option value="cash" className="bg-[#081A2F]">CASH</option>
+                        <option value="online" className="bg-[#081A2F]">ONLINE</option>
+                      </select>
                     </td>
 
                     {/* STATUS */}

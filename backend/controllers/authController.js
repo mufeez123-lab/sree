@@ -64,6 +64,12 @@ exports.register = async (req, res) => {
       ]
     );
 
+    // Trigger welcome email in background
+    const { sendWelcomeEmail } = require("../utils/email");
+    sendWelcomeEmail({ id: result.insertId, full_name, email, role }).catch(err => {
+      console.error("[Email Error] Failed to send welcome email:", err);
+    });
+
     res.status(201).json({
       success: true,
       message: "Registration Successful",
@@ -127,6 +133,12 @@ exports.login = async (req, res) => {
         expiresIn: "7d"
       }
     );
+
+    // Trigger login alert in background
+    const { sendLoginAlert } = require("../utils/email");
+    sendLoginAlert(user[0]).catch(err => {
+      console.error("[Email Error] Failed to send login alert:", err);
+    });
 
     res.json({
       success: true,
@@ -237,6 +249,19 @@ exports.updateUserRole = async (req, res) => {
       });
     }
 
+    // Fetch user details for email notification
+    try {
+      const [userRows] = await db.query("SELECT * FROM users WHERE id = ?", [id]);
+      if (userRows.length > 0) {
+        const { sendRoleUpdatedEmail } = require("../utils/email");
+        sendRoleUpdatedEmail(userRows[0]).catch(err => {
+          console.error("[Email Error] Failed to send role updated email:", err);
+        });
+      }
+    } catch (err) {
+      console.error("[Email] Failed to fetch user details for role update notification:", err);
+    }
+
     res.json({
       success: true,
       message: "User role updated successfully."
@@ -263,14 +288,22 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
-    const [result] = await db.query("DELETE FROM users WHERE id = ?", [id]);
-
-    if (result.affectedRows === 0) {
+    // Fetch user details before deleting
+    const [userRows] = await db.query("SELECT * FROM users WHERE id = ?", [id]);
+    if (userRows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "User not found."
       });
     }
+
+    const [result] = await db.query("DELETE FROM users WHERE id = ?", [id]);
+
+    // Send account deleted email in background
+    const { sendAccountDeletedEmail } = require("../utils/email");
+    sendAccountDeletedEmail(userRows[0]).catch(err => {
+      console.error("[Email Error] Failed to send account deleted email:", err);
+    });
 
     res.json({
       success: true,
