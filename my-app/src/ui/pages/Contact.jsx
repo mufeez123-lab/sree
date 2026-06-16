@@ -6,6 +6,8 @@ import Footer from '../components/Footer'
 import { useToast } from "../components/Toast";
 
 
+import { API_URL } from "../../config/api";
+
 const Contact = () => {
   const toast = useToast();
   const [formData, setFormData] = useState({
@@ -23,7 +25,7 @@ const Contact = () => {
     setStatus("sending");
 
     try {
-      const response = await fetch("http://localhost:5000/api/contact", {
+      const response = await fetch(`${API_URL}/api/contact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

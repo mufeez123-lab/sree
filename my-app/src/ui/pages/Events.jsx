@@ -3,6 +3,8 @@ import { motion } from "motion/react";
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
+import { API_URL } from "../../config/api";
+
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +13,7 @@ const Events = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/events");
+        const response = await fetch(`${API_URL}/api/events`);
         if (!response.ok) {
           throw new Error("Failed to fetch events");
         }
@@ -34,7 +36,7 @@ const Events = () => {
   const getImageUrl = (image) => {
     if (!image) return "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200";
     if (image.startsWith("http")) return image;
-    return `http://localhost:5000/uploads/${image}`;
+    return `${API_URL}/uploads/${image}`;
   };
   return (
    <>

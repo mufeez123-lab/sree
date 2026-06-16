@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
+import { API_URL } from "../../config/api";
+
 const Rooms = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,7 @@ const Rooms = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/rooms");
+        const response = await fetch(`${API_URL}/api/rooms`);
         if (!response.ok) {
           throw new Error("Failed to fetch rooms");
         }
@@ -35,7 +37,7 @@ const Rooms = () => {
   const getImageUrl = (image) => {
     if (!image) return "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1200";
     if (image.startsWith("http")) return image;
-    return `http://localhost:5000/uploads/${image}`;
+    return `${API_URL}/uploads/${image}`;
   };
   return (
    <>

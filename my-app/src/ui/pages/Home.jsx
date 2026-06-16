@@ -5,6 +5,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 
+import { API_URL } from "../../config/api";
+
 export default function Home() {
 
       const { scrollY } = useScroll();
@@ -21,7 +23,7 @@ useEffect(() => {
 const fetchRooms = async () => {
   try {
     const response = await fetch(
-      "http://localhost:5000/api/rooms"
+      `${API_URL}/api/rooms`
     );
 
     const data = await response.json();
@@ -45,7 +47,7 @@ const getImageUrl = (image) => {
     return image;
   }
 
-  return `http://localhost:5000/uploads/${image}`;
+  return `${API_URL}/uploads/${image}`;
 };
 
   return (
